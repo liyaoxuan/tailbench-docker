@@ -1,13 +1,10 @@
 #! /bin/bash
 
-# extract tailbench
-tar -xf tailbench-v0.9.tgz
-
 # for tailbench
 mkdir /scratch
 
 # config tailbench
-pushd tailbench-v0.9
+pushd /tailbench-v0.9
 
 # set build.sh
 sed -i "17{s/$/ 2>\&1/}" build.sh
