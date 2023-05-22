@@ -4,6 +4,7 @@ APP=img-dnn
 QPS=1000
 THREADS=2
 TESTTIME=30 #s
+NCLIENTS=1
 
 while (( ${#@} )); do
   case ${1} in
@@ -11,12 +12,14 @@ while (( ${#@} )); do
     -t=*)       THREADS=${1#*=} ;;
     -qps=*)     QPS=${1#*=} ;;
     -time=*)    TESTTIME=${1#*=} ;;
+    -n=*)       NCLIENTS=${1#*=} ;;
     *)          ARGS+=(${1}) ;;
   esac
 
   shift
 done
 export TBENCH_SERVER_PORT=80
+export TBENCH_NCLIENTS=$NCLIENTS
 export TBENCH_QPS=$QPS
 export TBENCH_WARMUPREQS=$(($QPS * 5))
 export TBENCH_MAXREQS=$(($QPS * $TESTTIME))
@@ -34,8 +37,7 @@ case $APP in
     ./img-dnn_server_networked \
       -r ${THREADS} \
       -f ${DATA_ROOT}/img-dnn/models/model.xml \
-      -n ${REQS} &
-    echo $! > server.pid
+      -n ${REQS}
   ;;
   masstree)
     ./mttest_server_networked \
@@ -110,16 +112,14 @@ case $APP in
       -Xms10000m \
       -Xmx10000m \
       -Xrs spec.jbb.JBBmain \
-      -propfile SPECjbb_mt.props &
-    echo $! > server.pid
+      -propfile SPECjbb_mt.props
   ;;
   sphinx)
     # Setup
     export LD_LIBRARY_PATH=./sphinx-install/lib:${LD_LIBRARY_PATH}
 
     ./decoder_server_networked \
-      -t ${THREADS} &
-    echo $! > server.pid
+      -t ${THREADS} 
   ;;
   xapian)
     export LD_LIBRARY_PATH=$ROOTDIR/xapian/xapian-core-1.2.13/install/lib

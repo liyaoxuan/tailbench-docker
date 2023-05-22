@@ -27,6 +27,7 @@
 #include <string>
 #include <unordered_map>
 #include <vector>
+#include <iostream>
 
 enum ClientStatus { INIT, WARMUP, ROI, FINISHED };
 
@@ -38,10 +39,12 @@ class Client {
         pthread_mutex_t lock;
         pthread_barrier_t barrier;
 
+        int nclients;
+        int idx;
+
         uint64_t minSleepNs;
-        uint64_t seed;
-        double lambda;
-        ExpDist* dist;
+        int qps;
+        Dist* dist;
 
         uint64_t startedReqs;
         std::unordered_map<uint64_t, Request*> inFlightReqs;
@@ -51,15 +54,16 @@ class Client {
         std::vector<uint64_t> sjrnTimes;
 
         void _startRoi();
+        Dist* getDist(uint64_t curNs);
 
     public:
-        Client(int nthreads);
+        Client(int nthreads, int nclients, int idx);
 
         Request* startReq();
         void finiReq(Response* resp);
 
         void startRoi();
-        void dumpStats();
+        void dumpStats(std::ios_base::openmode flag);
 
 };
 
@@ -72,7 +76,7 @@ class NetworkedClient : public Client {
         std::string error;
 
     public:
-        NetworkedClient(int nthreads, std::string serverip, int serverport);
+        NetworkedClient(int nthreads, std::string serverip, int serverport, int nclients, int idx);
         bool send(Request* req);
         bool recv(Response* resp);
         const std::string& errmsg() const { return error; }

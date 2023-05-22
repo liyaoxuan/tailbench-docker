@@ -43,8 +43,7 @@
  * IntegratedServer
  *******************************************************************************/
 IntegratedServer::IntegratedServer(int nthreads) 
-    : Server(nthreads)
-    , Client(nthreads)
+    : Server(nthreads), Client(nthreads, 1, 0)
 { }
 
 size_t IntegratedServer::recvReq(int id, void** data) {
@@ -79,7 +78,7 @@ void IntegratedServer::sendResp(int id, const void* data, size_t len) {
     if (finishedReqs == warmupReqs) {
         Client::_startRoi();
     } else if (finishedReqs == warmupReqs + maxReqs) {
-        Client::dumpStats();
+        Client::dumpStats(std::ios::out);
         syscall(SYS_exit_group, 0);
     }
 
@@ -111,7 +110,7 @@ void tBenchServerThreadStart() {
 }
 
 void tBenchServerFinish() {
-    server->dumpStats();
+    server->dumpStats(std::ios::out);
 }
 
 size_t tBenchRecvReq(void** data) {

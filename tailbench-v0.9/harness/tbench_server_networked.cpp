@@ -145,7 +145,7 @@ void NetworkedServer::removeClient(int fd) {
 bool NetworkedServer::checkRecv(int recvd, int expected, int fd) {
     bool success = false;
     if (recvd == 0) { // Client exited
-        std::cerr << "Client left, removing" << std::endl;
+        std::cout << "Client left, removing" << std::endl;
         removeClient(fd);
         success = false;
     } else if (recvd == -1) {
@@ -216,7 +216,7 @@ size_t NetworkedServer::recvReq(int id, void** data) {
     }
 
     if (clientFds.size() == 0) {
-        std::cerr << "All clients exited. Server finishing" << std::endl;
+        std::cout << "All clients exited. Server finishing" << std::endl;
         exit(0);
     } else {
         uint64_t curNs = getCurNs();

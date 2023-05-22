@@ -42,4 +42,18 @@ class ExpDist : public Dist {
         }
 };
 
+class UniDist : public Dist {
+    private:
+        uint64_t interval;
+        uint64_t curNs;
+
+    public:
+        UniDist(double interval, uint64_t startNs)
+            : interval(interval), curNs(startNs) {}
+
+        uint64_t nextArrivalNs() {
+            curNs += interval;
+            return curNs;
+        }
+};
 #endif

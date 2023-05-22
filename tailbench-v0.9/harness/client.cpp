@@ -41,22 +41,43 @@
  * Client
  *******************************************************************************/
 
-Client::Client(int _nthreads) {
+Client::Client(int _nthreads, int _nclients, int _idx) {
     status = INIT;
 
     nthreads = _nthreads;
+    nclients = _nclients;
+    idx = _idx;
     pthread_mutex_init(&lock, nullptr);
     pthread_barrier_init(&barrier, nullptr, nthreads);
     
     minSleepNs = getOpt("TBENCH_MINSLEEPNS", 0);
-    seed = getOpt("TBENCH_RANDSEED", 0);
-    lambda = getOpt<double>("TBENCH_QPS", 1000.0) * 1e-9;
-
+    qps = getOpt("TBENCH_QPS", 1000) / nclients;
     dist = nullptr; // Will get initialized in startReq()
 
     startedReqs = 0;
 
     tBenchClientInit();
+}
+
+Dist* Client::getDist(uint64_t curNs) {
+    int dist_type;
+    uint64_t seed;
+    double lambda, interval;
+    Dist *dist;
+    dist_type = getOpt("TBENCH_DIST", 0);
+    switch(dist_type) {
+    case 0:
+        seed = getOpt("TBENCH_RANDSEED", 0);
+        lambda = (double)qps * 1e-9;
+        dist = new ExpDist(lambda, seed, curNs);
+        break;
+    case 1:
+    default:
+        interval = 1e9 / (double)qps;
+        dist = new UniDist(interval, curNs);
+        break;
+    }
+    return dist;
 }
 
 Request* Client::startReq() {
@@ -67,7 +88,7 @@ Request* Client::startReq() {
 
         if (!dist) {
             uint64_t curNs = getCurNs();
-            dist = new ExpDist(lambda, seed, curNs);
+            dist = getDist(curNs);
 
             status = WARMUP;
 
@@ -80,13 +101,13 @@ Request* Client::startReq() {
         pthread_barrier_wait(&barrier);
     }
 
-    pthread_mutex_lock(&lock);
-
     Request* req = new Request();
     size_t len = tBenchClientGenReq(&req->data);
     req->len = len;
 
-    req->id = startedReqs++;
+    pthread_mutex_lock(&lock);
+    req->id = (startedReqs++) * nclients + idx;
+    // std::cout << "client" << idx << " send " << req->id << std::endl;
     req->genNs = dist->nextArrivalNs();
     inFlightReqs[req->id] = req;
 
@@ -128,6 +149,7 @@ void Client::finiReq(Response* resp) {
 }
 
 void Client::_startRoi() {
+    std::cout << "client" << idx << " start ROI" << std::endl;
     assert(status == WARMUP);
     status = ROI;
 
@@ -142,8 +164,8 @@ void Client::startRoi() {
     pthread_mutex_unlock(&lock);
 }
 
-void Client::dumpStats() {
-    std::ofstream out("lats.bin", std::ios::out | std::ios::binary);
+void Client::dumpStats(std::ios_base::openmode flag) {
+    std::ofstream out("lats.bin", flag | std::ios::binary);
     int reqs = sjrnTimes.size();
 
     for (int r = 0; r < reqs; ++r) {
@@ -161,7 +183,7 @@ void Client::dumpStats() {
  * Networked Client
  *******************************************************************************/
 NetworkedClient::NetworkedClient(int nthreads, std::string serverip, 
-        int serverport) : Client(nthreads)
+        int serverport, int nclients, int idx) : Client(nthreads, nclients, idx)
 {
     pthread_mutex_init(&sendLock, nullptr);
     pthread_mutex_init(&recvLock, nullptr);
