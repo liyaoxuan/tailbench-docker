@@ -1,6 +1,6 @@
 #!/bin/bash
-SERVER_IP=192.168.15.128
-CLIENT_IP=192.168.15.127
+SERVER_IP=192.168.15.130
+CLIENT_IP=192.168.15.2
 #create network
 docker network create \
   --driver=bridge \
@@ -12,15 +12,15 @@ docker network create \
 docker run -i -t -d \
   --network=tailbench \
   --ip=$SERVER_IP \
-  --hostname=server \
-  --name=tailbench-server \
-  tailbench:centos7
+  --hostname=server3 \
+  --name=tailbench-server3 \
+  tailbench-realtime:noxapian
 
 #start client
 docker run -i -t -d \
   --network=tailbench \
   --ip=$CLIENT_IP \
-  --hostname=client \
-  --name=tailbench-client \
-  tailbench:centos7
+  --hostname=client3 \
+  --name=tailbench-client3 \
+  tailbench-realtime:noxapian
 

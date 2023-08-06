@@ -11,13 +11,13 @@ RUN yum -y install epel-release && \
            libgtop2-devel glib-devel python python-devel python-pip openmpi-devel \
            boost-devel vim perf
 
-ADD tailbench.inputs.tgz /
-
 COPY setup.sh /
 
 COPY tailbench-v0.9 /tailbench-v0.9
 
 RUN /bin/bash setup.sh
+
+COPY tailbench.inputs /tailbench.inputs
 
 ENTRYPOINT ["/bin/bash"]
 

@@ -18,10 +18,11 @@ while (( ${#@} )); do
 
   shift
 done
-export TBENCH_SERVER_PORT=80
+export TBENCH_SERVER_PORT=8002
 export TBENCH_NCLIENTS=$NCLIENTS
 export TBENCH_QPS=$QPS
-export TBENCH_WARMUPREQS=$(($QPS * 5))
+#export TBENCH_WARMUPREQS=$(($QPS * 15))
+export TBENCH_WARMUPREQS=10
 export TBENCH_MAXREQS=$(($QPS * $TESTTIME))
 export TBENCH_MINSLEEPNS=10000
 

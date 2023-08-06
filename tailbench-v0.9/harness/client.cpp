@@ -41,6 +41,18 @@
  * Client
  *******************************************************************************/
 
+ClientStatus Client::getClientStatus() {
+    return status;
+}
+
+void Client::acquireLock() {
+    pthread_mutex_lock(&lock);
+}
+
+void Client::releaseLock() {
+    pthread_mutex_unlock(&lock);
+}
+
 Client::Client(int _nthreads, int _nclients, int _idx) {
     status = INIT;
 
@@ -109,7 +121,8 @@ Request* Client::startReq() {
     req->id = (startedReqs++) * nclients + idx;
     // std::cout << "client" << idx << " send " << req->id << std::endl;
     req->genNs = dist->nextArrivalNs();
-    inFlightReqs[req->id] = req;
+    RequestInfo reqInfo(req->id, req->genNs, req->len);
+    inFlightReqs[req->id] = reqInfo;
 
     pthread_mutex_unlock(&lock);
 
@@ -127,23 +140,28 @@ void Client::finiReq(Response* resp) {
 
     auto it = inFlightReqs.find(resp->id);
     assert(it != inFlightReqs.end());
-    Request* req = it->second;
+    RequestInfo reqInfo = it->second;
 
     if (status == ROI) {
         uint64_t curNs = getCurNs();
 
-        assert(curNs > req->genNs);
+        assert(curNs > reqInfo.genNs);
 
-        uint64_t sjrn = curNs - req->genNs;
+        uint64_t sjrn = curNs - reqInfo.genNs;
         assert(sjrn >= resp->svcNs);
-        uint64_t qtime = sjrn - resp->svcNs;
+        uint64_t q1time = resp->startNs - reqInfo.genNs;
+        uint64_t q2time = sjrn - resp->svcNs - q1time;
 
-        queueTimes.push_back(qtime);
+        genTimes.push_back(reqInfo.genNs);
+        queue1Times.push_back(q1time);
+	      startTimes.push_back(resp->startNs);
         svcTimes.push_back(resp->svcNs);
+        queue2Times.push_back(q2time);
         sjrnTimes.push_back(sjrn);
+        tmpSjrnTimes.push_back(sjrn);
     }
 
-    delete req;
+    //delete req;
     inFlightReqs.erase(it);
     pthread_mutex_unlock(&lock);
 }
@@ -153,9 +171,13 @@ void Client::_startRoi() {
     assert(status == WARMUP);
     status = ROI;
 
-    queueTimes.clear();
+    genTimes.clear();
+    queue1Times.clear();
+    startTimes.clear();
     svcTimes.clear();
+    queue2Times.clear();
     sjrnTimes.clear();
+    tmpSjrnTimes.clear();
 }
 
 void Client::startRoi() {
@@ -169,12 +191,27 @@ void Client::dumpStats(std::ios_base::openmode flag) {
     int reqs = sjrnTimes.size();
 
     for (int r = 0; r < reqs; ++r) {
-        out.write(reinterpret_cast<const char*>(&queueTimes[r]), 
-                    sizeof(queueTimes[r]));
-        out.write(reinterpret_cast<const char*>(&svcTimes[r]), 
-                    sizeof(svcTimes[r]));
         out.write(reinterpret_cast<const char*>(&sjrnTimes[r]), 
                     sizeof(sjrnTimes[r]));
+    }
+    out.close();
+}
+
+void Client::dumpReqInfo(std::ios_base::openmode flag) {
+    std::ofstream out("reqInfo.bin", flag | std::ios::binary);
+    int reqs = startTimes.size();
+
+    for (int r = 0; r < reqs; ++r) {
+        out.write(reinterpret_cast<const char*>(&genTimes[r]), 
+                    sizeof(genTimes[r]));
+        out.write(reinterpret_cast<const char*>(&queue1Times[r]), 
+                    sizeof(queue1Times[r]));
+        out.write(reinterpret_cast<const char*>(&startTimes[r]), 
+                    sizeof(startTimes[r]));
+        out.write(reinterpret_cast<const char*>(&svcTimes[r]), 
+                    sizeof(svcTimes[r]));
+        out.write(reinterpret_cast<const char*>(&queue2Times[r]), 
+                    sizeof(queue1Times[r]));
     }
     out.close();
 }
@@ -241,6 +278,7 @@ bool NetworkedClient::send(Request* req) {
     }
 
     pthread_mutex_unlock(&sendLock);
+    delete req;
 
     return (sent == len);
 }
@@ -252,6 +290,7 @@ bool NetworkedClient::recv(Response* resp) {
     int recvd = recvfull(serverFd, reinterpret_cast<char*>(resp), len, 0);
     if (recvd != len) {
         error = strerror(errno);
+	std::cout << "recvd head error" << std::endl;
         return false;
     }
 
@@ -261,6 +300,7 @@ bool NetworkedClient::recv(Response* resp) {
 
         if (static_cast<size_t>(recvd) != resp->len) {
             error = strerror(errno);
+	    std::cout << "recvd body error" << recvd << "," << resp->len << std::endl;
             return false;
         }
     }

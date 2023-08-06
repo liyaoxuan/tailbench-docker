@@ -180,12 +180,16 @@ size_t NetworkedServer::recvReq(int id, void** data) {
             FD_SET(f, &readSet);
             if (f > maxFd) maxFd = f;
         }
-
-        int ret = select(maxFd + 1, &readSet, nullptr, nullptr, nullptr);
+	struct timeval tv;
+	tv.tv_sec = 0;
+	tv.tv_usec = 0;
+        int ret = select(maxFd + 1, &readSet, nullptr, nullptr, &tv);
         if (ret == -1) {
             std::cerr << "select() failed: " << strerror(errno) << std::endl;
             exit(-1);
-        }
+        } else if (ret == 0) {
+	    continue;
+	}
 
         fd = -1;
 
@@ -244,6 +248,7 @@ void NetworkedServer::sendResp(int id, const void* data, size_t len) {
 
     uint64_t curNs = getCurNs();
     assert(curNs > reqInfo[id].startNs);
+    resp->startNs = reqInfo[id].startNs;
     resp->svcNs = curNs - reqInfo[id].startNs;
 
     int fd = activeFds[id];

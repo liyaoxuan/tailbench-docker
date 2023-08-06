@@ -32,9 +32,18 @@ struct Request {
     char data[MAX_REQ_BYTES];
 };
 
+struct RequestInfo {
+    uint64_t id;
+    uint64_t genNs;
+    size_t len;
+    RequestInfo() : id(-1), genNs(-1), len(0) {};
+    RequestInfo(uint64_t _id, uint64_t _genNs, size_t _len) : id(_id), genNs(_genNs), len(_len) {};
+};
+
 struct Response {
     ResponseType type;
     uint64_t id;
+    uint64_t startNs;
     uint64_t svcNs;
     size_t len;
     char data[MAX_RESP_BYTES];

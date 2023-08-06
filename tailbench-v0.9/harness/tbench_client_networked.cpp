@@ -21,10 +21,15 @@
 #include <pthread.h>
 #include <sys/syscall.h>
 #include <unistd.h>
+#include <sys/time.h>
+#include <sys/select.h>
+#include <errno.h>
 
 #include <iostream>
 #include <string>
 #include <vector>
+#include <fstream>
+#include <algorithm>
 
 struct func_param {
     NetworkedClient* client;
@@ -81,6 +86,7 @@ void* recv(void* c) {
                 flag = std::ios::app;
             *live_clients -= 1;
             client->dumpStats(flag);
+            client->dumpReqInfo(flag);
             if (*live_clients == 0)
                 syscall(SYS_exit_group, 0);
             pthread_mutex_unlock(lock);
@@ -91,11 +97,22 @@ void* recv(void* c) {
     }
 }
 
+void sleep_us(int us) {
+    struct timeval tv;
+    int err;
+    tv.tv_sec = static_cast<int>(us / 1000000);
+    tv.tv_usec = static_cast<int>(us % 1000000);
+    do {
+        err = select(0, NULL, NULL, NULL, &tv);
+      } while(err < 0 && errno == EINTR);
+}
+
 int main(int argc, char* argv[]) {
     int nthreads = getOpt<int>("TBENCH_CLIENT_THREADS", 1);
     std::string server = getOpt<std::string>("TBENCH_SERVER", "");
     int serverport = getOpt<int>("TBENCH_SERVER_PORT", 8080);
     int nclients = getOpt<int>("TBENCH_NCLIENTS", 1);
+    int interval = getOpt<int>("TBENCH_INTERVAL", 1);
     int live_clients = nclients;
     pthread_mutex_t lock_live_clients;
     pthread_mutex_init(&lock_live_clients, nullptr);
@@ -125,6 +142,40 @@ int main(int argc, char* argv[]) {
         int status = pthread_create(&receivers[t], nullptr, recv, 
                 reinterpret_cast<void*>(param));
         assert(status == 0);
+    }
+
+    ClientStatus client_status;
+    for (int i = 0; i < nclients; ++i) {
+      NetworkedClient* client = clients[i];
+      client->acquireLock();
+      while ((client_status = client->getClientStatus()) != ROI) {
+          client->releaseLock();
+          sleep_us(1 * 1e6); // 1s
+          client->acquireLock();
+      }
+      client->releaseLock();
+    }
+    std::ofstream out_file("lats.txt", std::ios::out);
+    std::vector<uint64_t> srjnTimes_copies[nclients];
+    std::vector<uint64_t> srjnTimes_total;
+    while (true) {
+        sleep_us(interval * 1e6);
+        for (int i = 0; i < nclients; ++i) {
+            NetworkedClient* client = clients[i];
+            client->acquireLock();
+            srjnTimes_total.insert(srjnTimes_total.end(), client->tmpSjrnTimes.begin(), client->tmpSjrnTimes.end());
+            client->tmpSjrnTimes.clear();
+            client->releaseLock();
+        }
+        int requests = srjnTimes_total.size();
+        int p95_idx = static_cast<int>(requests * 0.95);
+        if (p95_idx > 0) {
+            out_file << requests << "," << srjnTimes_total[p95_idx] / static_cast<double>(1e6) << std::endl;
+        } else {
+            std::cout << "no request received in last interval, stop print latency" << std::endl;
+            break;
+        }
+        srjnTimes_total.clear();
     }
 
     for (int t = 0; t < nthreads; ++t) {

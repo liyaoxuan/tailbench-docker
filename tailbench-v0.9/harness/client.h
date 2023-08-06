@@ -47,16 +47,20 @@ class Client {
         Dist* dist;
 
         uint64_t startedReqs;
-        std::unordered_map<uint64_t, Request*> inFlightReqs;
+        std::unordered_map<uint64_t, RequestInfo> inFlightReqs;
 
         std::vector<uint64_t> svcTimes;
-        std::vector<uint64_t> queueTimes;
+        std::vector<uint64_t> queue1Times;
+        std::vector<uint64_t> queue2Times;
         std::vector<uint64_t> sjrnTimes;
+        std::vector<uint64_t> startTimes;
+        std::vector<uint64_t> genTimes;
 
         void _startRoi();
         Dist* getDist(uint64_t curNs);
 
     public:
+        std::vector<uint64_t> tmpSjrnTimes;
         Client(int nthreads, int nclients, int idx);
 
         Request* startReq();
@@ -64,6 +68,10 @@ class Client {
 
         void startRoi();
         void dumpStats(std::ios_base::openmode flag);
+        void dumpReqInfo(std::ios_base::openmode flag);
+        ClientStatus getClientStatus();
+        void acquireLock();
+        void releaseLock();
 
 };
 
