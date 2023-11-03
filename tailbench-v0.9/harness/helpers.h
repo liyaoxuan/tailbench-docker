@@ -48,7 +48,7 @@ static T getOpt(const char* name, T defVal) {
 
 static uint64_t getCurNs() {
     struct timespec ts;
-    clock_gettime(CLOCK_REALTIME, &ts);
+    clock_gettime(CLOCK_MONOTONIC, &ts);
     uint64_t t = ts.tv_sec*1000*1000*1000 + ts.tv_nsec;
     return t;
 }
