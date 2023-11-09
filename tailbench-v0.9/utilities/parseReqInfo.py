@@ -8,6 +8,7 @@ import argparse
 
 parser = argparse.ArgumentParser()
 parser.add_argument('-n', '--normalize', help="normalized time stamp to that of first generated request", action="store_true")
+parser.add_argument('latsFile', help="path to reqInfo.bin")
 args = parser.parse_args()
 
 class Lat(object):
@@ -56,6 +57,5 @@ if __name__ == '__main__':
             f.write("%d,%.3f,%d,%.3f,%.3f,%d\n" % (gen, q1, start, svc, q2, tid))
         f.close()
 
-    latsFile = sys.argv[1]
-    getLatPct(latsFile)
+    getLatPct(args.latsFile)
 
