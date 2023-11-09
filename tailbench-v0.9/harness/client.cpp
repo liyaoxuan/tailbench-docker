@@ -154,11 +154,12 @@ void Client::finiReq(Response* resp) {
 
         genTimes.push_back(reqInfo.genNs);
         queue1Times.push_back(q1time);
-	      startTimes.push_back(resp->startNs);
+        startTimes.push_back(resp->startNs);
         svcTimes.push_back(resp->svcNs);
         queue2Times.push_back(q2time);
         sjrnTimes.push_back(sjrn);
         tmpSjrnTimes.push_back(sjrn);
+        tids.push_back(resp->tid);
     }
 
     //delete req;
@@ -178,6 +179,7 @@ void Client::_startRoi() {
     queue2Times.clear();
     sjrnTimes.clear();
     tmpSjrnTimes.clear();
+    tids.clear();
 }
 
 void Client::startRoi() {
@@ -212,6 +214,8 @@ void Client::dumpReqInfo(std::ios_base::openmode flag) {
                     sizeof(svcTimes[r]));
         out.write(reinterpret_cast<const char*>(&queue2Times[r]), 
                     sizeof(queue1Times[r]));
+        out.write(reinterpret_cast<const char*>(&tids[r]), 
+                    sizeof(tids[r]));
     }
     out.close();
 }

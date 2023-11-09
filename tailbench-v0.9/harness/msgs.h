@@ -43,6 +43,7 @@ struct RequestInfo {
 struct Response {
     ResponseType type;
     uint64_t id;
+    uint64_t tid;
     uint64_t startNs;
     uint64_t svcNs;
     size_t len;

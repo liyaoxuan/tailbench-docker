@@ -55,6 +55,7 @@ class Client {
         std::vector<uint64_t> sjrnTimes;
         std::vector<uint64_t> startTimes;
         std::vector<uint64_t> genTimes;
+        std::vector<uint64_t> tids;
 
         void _startRoi();
         Dist* getDist(uint64_t curNs);

@@ -225,6 +225,7 @@ size_t NetworkedServer::recvReq(int id, void** data) {
     } else {
         uint64_t curNs = getCurNs();
         reqInfo[id].id = req->id;
+        reqInfo[id].tid = syscall(SYS_gettid);
         reqInfo[id].startNs = curNs;
         activeFds[id] = fd;
 
@@ -243,6 +244,7 @@ void NetworkedServer::sendResp(int id, const void* data, size_t len) {
     
     resp->type = RESPONSE;
     resp->id = reqInfo[id].id;
+    resp->tid = reqInfo[id].tid;
     resp->len = len;
     memcpy(reinterpret_cast<void*>(&resp->data), data, len);
 

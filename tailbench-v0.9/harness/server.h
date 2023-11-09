@@ -32,6 +32,7 @@ class Server {
     protected:
         struct ReqInfo {
             uint64_t id;
+            uint64_t tid;
             uint64_t startNs;
         };
 
