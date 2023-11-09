@@ -5,6 +5,7 @@ QPS=1000
 THREADS=2
 NCLIENTS=1
 SERVER=127.0.0.1
+WARMTIME=10 #s
 TESTTIME=30 #s
 
 while (( ${#@} )); do
@@ -14,7 +15,8 @@ while (( ${#@} )); do
     -n=*)       NCLIENTS=${1#*=} ;;
     -qps=*)     QPS=${1#*=} ;;
     -s=*)       SERVER=${1#*=} ;;
-    -time=*)    TESTTIME=${1#*=} ;;
+    -warm=*)    WARMTIME=${1#*=} ;;
+    -test=*)    TESTTIME=${1#*=} ;;
     
     *)          ARGS+=(${1}) ;;
   esac
@@ -26,8 +28,7 @@ export TBENCH_SERVER_PORT=8002
 export TBENCH_CLIENT_THREADS=$THREADS
 export TBENCH_NCLIENTS=$NCLIENTS
 export TBENCH_QPS=$QPS
-#export TBENCH_WARMUPREQS=$(($QPS * 15))
-export TBENCH_WARMUPREQS=10
+export TBENCH_WARMUPREQS=$(($QPS * $WARMTIME))
 export TBENCH_MAXREQS=$(($QPS * $TESTTIME))
 export TBENCH_MINSLEEPNS=10000
 export TBENCH_DIST=1

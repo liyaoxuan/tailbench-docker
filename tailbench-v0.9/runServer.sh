@@ -3,6 +3,7 @@
 APP=img-dnn
 QPS=1000
 THREADS=2
+WARMTIME=10 #s
 TESTTIME=30 #s
 NCLIENTS=1
 
@@ -11,7 +12,8 @@ while (( ${#@} )); do
     -app=*)     APP=${1#*=} ;;
     -t=*)       THREADS=${1#*=} ;;
     -qps=*)     QPS=${1#*=} ;;
-    -time=*)    TESTTIME=${1#*=} ;;
+    -warm=*)    WARMTIME=${1#*=} ;;
+    -test=*)    TESTTIME=${1#*=} ;;
     -n=*)       NCLIENTS=${1#*=} ;;
     *)          ARGS+=(${1}) ;;
   esac
@@ -21,8 +23,7 @@ done
 export TBENCH_SERVER_PORT=8002
 export TBENCH_NCLIENTS=$NCLIENTS
 export TBENCH_QPS=$QPS
-#export TBENCH_WARMUPREQS=$(($QPS * 15))
-export TBENCH_WARMUPREQS=10
+export TBENCH_WARMUPREQS=$(($QPS * $WARMTIME))
 export TBENCH_MAXREQS=$(($QPS * $TESTTIME))
 export TBENCH_MINSLEEPNS=10000
 
