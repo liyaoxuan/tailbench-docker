@@ -167,6 +167,7 @@ int main(int argc, char* argv[]) {
             client->tmpSjrnTimes.clear();
             client->releaseLock();
         }
+        std::sort(srjnTimes_total.begin(), srjnTimes_total.end());
         int requests = srjnTimes_total.size();
         int p95_idx = static_cast<int>(requests * 0.95);
         if (p95_idx > 0) {
