@@ -31,6 +31,9 @@
 #include <fstream>
 #include <algorithm>
 
+int num_start_roi = 0;
+pthread_mutex_t lock_num_start_roi;
+
 struct func_param {
     NetworkedClient* client;
     int nclients;
@@ -77,6 +80,9 @@ void* recv(void* c) {
             client->finiReq(&resp);
         } else if (resp.type == ROI_BEGIN) {
             client->startRoi();
+            pthread_mutex_lock(&lock_num_start_roi);
+            num_start_roi += 1;
+            pthread_mutex_unlock(&lock_num_start_roi);
         } else if (resp.type == FINISH) {
             std::ios_base::openmode flag;
             pthread_mutex_lock(lock);
@@ -116,6 +122,7 @@ int main(int argc, char* argv[]) {
     int live_clients = nclients;
     pthread_mutex_t lock_live_clients;
     pthread_mutex_init(&lock_live_clients, nullptr);
+    pthread_mutex_init(&lock_num_start_roi, nullptr);
 
     std::vector<NetworkedClient*> clients(nclients);
     for (int c = 0; c < nclients; ++c) {
@@ -144,20 +151,14 @@ int main(int argc, char* argv[]) {
         assert(status == 0);
     }
 
-    ClientStatus client_status;
-    for (int i = 0; i < nclients; ++i) {
-      NetworkedClient* client = clients[i];
-      client->acquireLock();
-      while ((client_status = client->getClientStatus()) != ROI) {
-          client->releaseLock();
-          sleep_us(1 * 1e6); // 1s
-          client->acquireLock();
-      }
-      client->releaseLock();
-    }
     std::ofstream out_file("lats.txt", std::ios::out);
     std::vector<uint64_t> srjnTimes_copies[nclients];
     std::vector<uint64_t> srjnTimes_total;
+
+    while (num_start_roi < nclients) {
+        sleep_us(1e4);
+    }
+
     while (true) {
         sleep_us(interval * 1e6);
         for (int i = 0; i < nclients; ++i) {
