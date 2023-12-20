@@ -39,12 +39,12 @@ case $APP in
     ./img-dnn_server_networked \
       -r ${THREADS} \
       -f ${DATA_ROOT}/img-dnn/models/model.xml \
-      -n ${REQS}
+      -n ${REQS} > server.log 2>&1 &
   ;;
   masstree)
     ./mttest_server_networked \
       -j ${THREADS} \
-    mycsba masstree # must run foreground
+    mycsba masstree > server.log 2>&1 & # must run foreground
   ;;
   moses)
     # Setup
@@ -57,7 +57,7 @@ case $APP in
       -input-file ${DATA_ROOT}/moses/testTerms \
       -threads ${THREADS} \
       -num-tasks ${REQS} \
-      -verbose 0
+      -verbose 0 > server.log 2>&1 &
   ;;
   shores)
     # Setup
@@ -78,7 +78,7 @@ case $APP in
     sed -i -e "s#@NTHREADS#${THREADS}#g" shore.conf
 
     # Launch Server
-    ./shore-kits/shore_kits_server_networked -i cmdfile
+    ./shore-kits/shore_kits_server_networked -i cmdfile > server.log 2>&1 &
   ;;
   silo)
     NUM_WAREHOUSES=1
@@ -88,7 +88,7 @@ case $APP in
       --scale-factor ${NUM_WAREHOUSES} \
       --retry-aborted-transactions \
       --ops-per-worker ${REQS} \
-      --verbose
+      --verbose > server.log 2>&1 &
   ;;
   specjbb)
     # Setup commands
@@ -114,23 +114,25 @@ case $APP in
       -Xms10000m \
       -Xmx10000m \
       -Xrs spec.jbb.JBBmain \
-      -propfile SPECjbb_mt.props
+      -propfile SPECjbb_mt.props > server.log 2>&1 &
   ;;
   sphinx)
     # Setup
     export LD_LIBRARY_PATH=./sphinx-install/lib:${LD_LIBRARY_PATH}
 
     ./decoder_server_networked \
-      -t ${THREADS} 
+      -t ${THREADS}  > server.log 2>&1 &
   ;;
   xapian)
     export LD_LIBRARY_PATH=$ROOTDIR/xapian/xapian-core-1.2.13/install/lib
     ./xapian_networked_server \
       -n ${THREADS} \
       -d ${DATA_ROOT}/xapian/wiki \
-      -r ${REQS}
+      -r ${REQS} > server.log 2>&1 &
   ;;
   default)
     echo "invalid app: $APP"
+    exit 0
   ;;
 esac
+echo $! > server.pid

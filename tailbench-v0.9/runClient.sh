@@ -7,6 +7,7 @@ NCLIENTS=1
 SERVER=127.0.0.1
 WARMTIME=10 #s
 TESTTIME=30 #s
+WAIT=1
 
 while (( ${#@} )); do
   case ${1} in
@@ -17,6 +18,7 @@ while (( ${#@} )); do
     -s=*)       SERVER=${1#*=} ;;
     -warm=*)    WARMTIME=${1#*=} ;;
     -test=*)    TESTTIME=${1#*=} ;;
+    -wait=*)    WAIT=${1#*=} ;;
     
     *)          ARGS+=(${1}) ;;
   esac
@@ -43,16 +45,13 @@ cd $APP
 case $APP in
   img-dnn)
     export TBENCH_MNIST_DIR=${DATA_ROOT}/img-dnn/mnist
-    ./img-dnn_client_networked &
-    echo $! > client.pid
+    ./img-dnn_client_networked > client.log 2>&1 &
   ;;
   masstree)
-    ./mttest_client_networked &
-    echo $! > client.pid
+    ./mttest_client_networked > client.log 2>&1 &
   ;;
   moses)
-    ./bin/moses_client_networked &
-    echo $! > client.pid
+    ./bin/moses_client_networked > client.log 2>&1 &
   ;;
   shore)
     # Setup
@@ -74,33 +73,32 @@ case $APP in
 
     # Launch Client
     ./shore-kits/shore_kits_client_networked \
-      -i cmdfile &
-    echo $! > client.pid
+      -i cmdfile > client.log 2>&1 &
   ;;
   silo)
-    ./out-perf.masstree/benchmarks/dbtest_client_networked &
-    echo $! > client.pid
+    ./out-perf.masstree/benchmarks/dbtest_client_networked > client.log 2>&1 &
   ;;
   specjbb)
-    ./client &
-    echo $! > client.pid
+    ./client > client.log 2>&1 &
   ;;
   sphinx)
     AUDIO_SAMPLES='audio_samples'
     export TBENCH_AN4_CORPUS=${DATA_ROOT}/sphinx
     export TBENCH_AUDIO_SAMPLES=${AUDIO_SAMPLES} 
     export LD_LIBRARY_PATH=./sphinx-install/lib:${LD_LIBRARY_PATH}
-    ./decoder_client_networked &
-    echo $! > client.pid
+    ./decoder_client_networked > client.log 2>&1 &
   ;;
   xapian)
     export TBENCH_TERMS_FILE=${DATA_ROOT}/xapian/terms.in
     export LD_LIBRARY_PATH=$ROOTDIR/xapian/xapian-core-1.2.13/install/lib
-    ./xapian_networked_client &
-    echo $! > client.pid
+    ./xapian_networked_client > client.log 2>&1 &
   ;;
   default)
     echo "invalid app: $APP"
+    exit 0
   ;;
 esac
-wait $(cat client.pid)
+echo $! > client.pid
+if [ "$WAIT" -eq 1 ]; then
+  wait $(cat client.pid)
+fi
