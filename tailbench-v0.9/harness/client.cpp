@@ -93,6 +93,10 @@ Dist* Client::getDist(uint64_t curNs) {
 }
 
 Request* Client::startReq() {
+    Request* req = new Request();
+    size_t len = tBenchClientGenReq(&req->data);
+    req->len = len;
+
     if (status == INIT) {
         pthread_barrier_wait(&barrier); // Wait for all threads to start up
 
@@ -112,10 +116,6 @@ Request* Client::startReq() {
 
         pthread_barrier_wait(&barrier);
     }
-
-    Request* req = new Request();
-    size_t len = tBenchClientGenReq(&req->data);
-    req->len = len;
 
     pthread_mutex_lock(&lock);
     req->id = (startedReqs++) * nclients + idx;
