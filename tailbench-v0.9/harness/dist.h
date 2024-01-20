@@ -24,6 +24,7 @@ class Dist {
     public:
         virtual ~Dist() {};
         virtual uint64_t nextArrivalNs() = 0;
+        virtual void setInterval(uint64_t) = 0;
 };
 
 class ExpDist : public Dist {
@@ -40,6 +41,9 @@ class ExpDist : public Dist {
             curNs += d(g);
             return curNs;
         }
+        void setInterval(uint64_t _interval) {
+            ;
+        }
 };
 
 class UniDist : public Dist {
@@ -54,6 +58,9 @@ class UniDist : public Dist {
         uint64_t nextArrivalNs() {
             curNs += interval;
             return curNs;
+        }
+	void setInterval(uint64_t _interval) {
+            interval = _interval;
         }
 };
 #endif
