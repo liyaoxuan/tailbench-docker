@@ -56,7 +56,7 @@ case $APP in
       -config ./moses.ini \
       -input-file ${DATA_ROOT}/moses/testTerms \
       -threads ${THREADS} \
-      -num-tasks ${REQS} \
+      -num-tasks 1000000 \
       -verbose 0 > server.log 2>&1 &
   ;;
   shores)

@@ -415,7 +415,7 @@ public:
   }
 
   ~TranslationTask() {
-    delete m_source;
+    //delete m_source;
   }
 
 private:
@@ -735,14 +735,14 @@ int main(int argc, char** argv)
   
     const size_t numTasks = staticData.GetNumTasks();
 
-    // Submit super tasks for execution
-    for (size_t i = 0; i < numTasks; i++)
-    {
         if (!ReadInput(*ioWrapper, staticData.GetInputType(), source)) 
         {
             std::cerr << "Not enough input sentences" << std::endl;
             return -1;
         }
+    // Submit super tasks for execution
+    for (size_t i = 0; i < numTasks; i++)
+    {
         // set up task of translating one sentence
         TranslationTask* task =
             new TranslationTask(lineCount,source, outputCollector.get(),
@@ -762,7 +762,7 @@ int main(int argc, char** argv)
         task->Run();
         delete task;
 #endif
-        source = NULL; //make sure it doesn't get deleted
+        //source = NULL; //make sure it doesn't get deleted
         ++lineCount;
     }
   
@@ -772,6 +772,7 @@ int main(int argc, char** argv)
 #endif
 
     delete ioWrapper;
+    delete source;
 
   } catch (const std::exception &e) {
     std::cerr << "Exception: " << e.what() << std::endl;
