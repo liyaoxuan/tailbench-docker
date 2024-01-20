@@ -151,7 +151,7 @@ int main(int argc, char* argv[]) {
         assert(status == 0);
     }
 
-    std::ofstream out_file("lats.txt", std::ios::out);
+    std::ofstream out_file("/data/lats.txt", std::ios::out);
     std::vector<uint64_t> srjnTimes_copies[nclients];
     std::vector<uint64_t> srjnTimes_total;
 
@@ -160,7 +160,7 @@ int main(int argc, char* argv[]) {
     }
 
     while (true) {
-        sleep_us(interval * 1e6);
+        sleep_us(interval * 5e5);
         for (int i = 0; i < nclients; ++i) {
             NetworkedClient* client = clients[i];
             client->acquireLock();
