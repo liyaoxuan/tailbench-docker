@@ -9,7 +9,8 @@ RUN yum -y install epel-release && \
            zlib-devel libuuid-devel opencv-devel jemalloc-devel numactl-devel \
            libdb-cxx-devel libaio-devel openssl-devel readline-devel \
            libgtop2-devel glib-devel python python-devel python-pip openmpi-devel \
-           boost-devel vim perf
+           boost-devel vim perf && \
+    mkdir -p /data
 
 COPY setup.sh /
 
