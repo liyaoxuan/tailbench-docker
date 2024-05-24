@@ -28,6 +28,8 @@
 #include <unordered_map>
 #include <vector>
 #include <iostream>
+#include <condition_variable>
+#include <mutex>
 
 enum ClientStatus { INIT, WARMUP, ROI, FINISHED };
 
@@ -46,6 +48,10 @@ class Client {
         int qps;
         Dist* dist;
 
+        std::mutex m;
+        std::condition_variable cv;
+        bool ready;
+        uint64_t warmupReqs_client;
         uint64_t startedReqs;
         std::unordered_map<uint64_t, RequestInfo> inFlightReqs;
 

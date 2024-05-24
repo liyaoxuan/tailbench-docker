@@ -61,11 +61,13 @@ Client::Client(int _nthreads, int _nclients, int _idx) {
     idx = _idx;
     pthread_mutex_init(&lock, nullptr);
     pthread_barrier_init(&barrier, nullptr, nthreads);
+    ready = false;
     
     minSleepNs = getOpt("TBENCH_MINSLEEPNS", 0);
     qps = getOpt("TBENCH_QPS", 1000) / nclients;
     dist = nullptr; // Will get initialized in startReq()
 
+    warmupReqs_client = getOpt("TBENCH_WARMUPREQS", 1000);
     startedReqs = 0;
 
     tBenchClientInit();
@@ -115,6 +117,12 @@ Request* Client::startReq() {
         pthread_mutex_unlock(&lock);
 
         pthread_barrier_wait(&barrier);
+    }
+    if (status == WARMUP && startedReqs >= warmupReqs_client) {
+        std::unique_lock<std::mutex> lk(m);
+        auto& ref_ready = ready;
+        cv.wait(lk, [&ref_ready](){return ref_ready;});
+        lk.unlock();
     }
 
     pthread_mutex_lock(&lock);
@@ -168,7 +176,6 @@ void Client::finiReq(Response* resp) {
 }
 
 void Client::_startRoi() {
-    std::cout << "client" << idx << " start ROI" << std::endl;
     assert(status == WARMUP);
     status = ROI;
 
@@ -180,12 +187,17 @@ void Client::_startRoi() {
     sjrnTimes.clear();
     tmpSjrnTimes.clear();
     tids.clear();
+    uint64_t curNs = getCurNs();
+    dist = getDist(curNs);
 }
 
 void Client::startRoi() {
     pthread_mutex_lock(&lock);
     _startRoi();
     pthread_mutex_unlock(&lock);
+    std::lock_guard<std::mutex> lk(m);
+    ready = true;
+    cv.notify_all();
 }
 
 void Client::dumpStats(std::ios_base::openmode flag) {
