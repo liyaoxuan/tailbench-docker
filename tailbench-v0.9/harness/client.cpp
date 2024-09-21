@@ -306,7 +306,7 @@ bool NetworkedClient::recv(Response* resp) {
     int recvd = recvfull(serverFd, reinterpret_cast<char*>(resp), len, 0);
     if (recvd != len) {
         error = strerror(errno);
-	std::cout << "recvd head error" << std::endl;
+        std::cout << "recvd head error" << std::endl;
         return false;
     }
 
@@ -316,7 +316,7 @@ bool NetworkedClient::recv(Response* resp) {
 
         if (static_cast<size_t>(recvd) != resp->len) {
             error = strerror(errno);
-	    std::cout << "recvd body error" << recvd << "," << resp->len << std::endl;
+            std::cout << "recvd body error" << recvd << "," << resp->len << std::endl;
             return false;
         }
     }
