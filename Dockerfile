@@ -1,6 +1,8 @@
 FROM centos:centos7
 
-RUN yum -y install epel-release && \
+RUN sed -i 's/mirrorlist=/#mirrorlist=/g' /etc/yum.repos.d/CentOS-Base.repo && \
+    sed -i 's/#baseurl=http:\/\/mirror.centos.org\/centos\/$releasever/baseurl=http:\/\/mirrors.aliyun.com\/centos-vault\/7.9.2009/g' /etc/yum.repos.d/CentOS-Base.repo && \
+    yum -y install epel-release && \
     yum -y update && \
     yum -y install openssh-server openssh-clients \
            gperftools google-perftools gcc gcc-c++ make automake wget less file \
