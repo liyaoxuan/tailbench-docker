@@ -127,6 +127,71 @@ Request* Client::startReq() {
 
     pthread_mutex_lock(&lock);
     req->id = (startedReqs++) * nclients + idx;
+    if (startedReqs == 10) {
+	int _qps = 300;
+        double _interval = 1e9 / (double)(_qps);
+	dist->setInterval(_interval);
+    } else if (startedReqs == 12000) {
+	int _qps = 600;
+        double _interval = 1e9 / (double)(_qps);
+	dist->setInterval(_interval);
+    } else if (startedReqs == 24000) {
+	int _qps = 900;
+        double _interval = 1e9 / (double)(_qps);
+	dist->setInterval(_interval);
+    } else if (startedReqs == 42000) {
+	int _qps = 1200;
+        double _interval = 1e9 / (double)(_qps);
+	dist->setInterval(_interval);
+    } else if (startedReqs == 66000) {
+	int _qps = 1500;
+        double _interval = 1e9 / (double)(_qps);
+	dist->setInterval(_interval);
+    } else if (startedReqs == 96000) {
+	int _qps = 1800;
+        double _interval = 1e9 / (double)(_qps);
+	dist->setInterval(_interval);
+    } else if (startedReqs == 132000) {
+	int _qps = 2100;
+        double _interval = 1e9 / (double)(_qps);
+	dist->setInterval(_interval);
+    } else if (startedReqs == 174000) {
+	int _qps = 2400;
+        double _interval = 1e9 / (double)(_qps);
+	dist->setInterval(_interval);
+    } else if (startedReqs == 222000) {
+	int _qps = 2100;
+        double _interval = 1e9 / (double)(_qps);
+	dist->setInterval(_interval);
+    } else if (startedReqs == 264000) {
+	int _qps = 1800;
+        double _interval = 1e9 / (double)(_qps);
+	dist->setInterval(_interval);
+    } else if (startedReqs == 300000) {
+	int _qps = 1500;
+        double _interval = 1e9 / (double)(_qps);
+	dist->setInterval(_interval);
+    } else if (startedReqs == 330000) {
+	int _qps = 1200;
+        double _interval = 1e9 / (double)(_qps);
+	dist->setInterval(_interval);
+    } else if (startedReqs == 354000) {
+	int _qps = 900;
+        double _interval = 1e9 / (double)(_qps);
+	dist->setInterval(_interval);
+    } else if (startedReqs == 372000) {
+	int _qps = 600;
+        double _interval = 1e9 / (double)(_qps);
+	dist->setInterval(_interval);
+    } else if (startedReqs == 384000) {
+	int _qps = 300;
+        double _interval = 1e9 / (double)(_qps);
+	dist->setInterval(_interval);
+    } else if (startedReqs == 390000) {
+	int _qps = 600;
+        double _interval = 1e9 / (double)(_qps);
+	dist->setInterval(_interval);
+    }
     // std::cout << "client" << idx << " send " << req->id << std::endl;
     req->genNs = dist->nextArrivalNs();
     RequestInfo reqInfo(req->id, req->genNs, req->len);
