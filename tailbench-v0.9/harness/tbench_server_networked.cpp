@@ -166,7 +166,6 @@ bool NetworkedServer::checkRecv(int recvd, int expected, int fd) {
 }
 
 size_t NetworkedServer::recvReq(int id, void** data) {
-    pthread_mutex_lock(&recvLock);
 
     bool success = false;
     Request* req;
@@ -180,10 +179,7 @@ size_t NetworkedServer::recvReq(int id, void** data) {
             FD_SET(f, &readSet);
             if (f > maxFd) maxFd = f;
         }
-        struct timeval tv;
-        tv.tv_sec = 0;
-        tv.tv_usec = 0;
-        int ret = select(maxFd + 1, &readSet, nullptr, nullptr, &tv);
+        int ret = select(maxFd + 1, &readSet, nullptr, nullptr, nullptr);
         if (ret == -1) {
             std::cerr << "select() failed: " << strerror(errno) << std::endl;
             exit(-1);
@@ -191,6 +187,7 @@ size_t NetworkedServer::recvReq(int id, void** data) {
             continue;
         }
 
+        pthread_mutex_lock(&recvLock);
         fd = -1;
 
         for (size_t i = 0; i < clientFds.size(); ++i) {
@@ -211,12 +208,20 @@ size_t NetworkedServer::recvReq(int id, void** data) {
         int recvd = recvfull(fd, reinterpret_cast<char*>(req), len, 0);
 
         success = checkRecv(recvd, len, fd);
-        if (!success) continue;
+        if (!success) {
+            pthread_mutex_unlock(&recvLock);
+            continue;
+        }
 
         recvd = recvfull(fd, req->data, req->len, 0);
 
         success = checkRecv(recvd, req->len, fd);
-        if (!success) continue;
+        if (!success) {
+            pthread_mutex_unlock(&recvLock);
+            continue;
+        }
+
+        pthread_mutex_unlock(&recvLock);
     }
 
     if (clientFds.size() == 0) {
@@ -232,13 +237,10 @@ size_t NetworkedServer::recvReq(int id, void** data) {
         *data = reinterpret_cast<void*>(&req->data);
     }
 
-    pthread_mutex_unlock(&recvLock);
-
     return req->len;
 };
 
 void NetworkedServer::sendResp(int id, const void* data, size_t len) {
-    pthread_mutex_lock(&sendLock);
 
     Response* resp = new Response();
 
@@ -255,7 +257,9 @@ void NetworkedServer::sendResp(int id, const void* data, size_t len) {
 
     int fd = activeFds[id];
     int totalLen = sizeof(Response) - MAX_RESP_BYTES + len;
+    pthread_mutex_lock(&sendLock);
     int sent = sendfull(fd, reinterpret_cast<const char*>(resp), totalLen, 0);
+    pthread_mutex_unlock(&sendLock);
     assert(sent == totalLen);
 
     ++finishedReqs;
@@ -264,21 +268,24 @@ void NetworkedServer::sendResp(int id, const void* data, size_t len) {
         resp->type = ROI_BEGIN;
         for (int fd : clientFds) {
             totalLen = sizeof(Response) - MAX_RESP_BYTES;
+            pthread_mutex_lock(&sendLock);
             sent = sendfull(fd, reinterpret_cast<const char*>(resp), totalLen, 0);
+            pthread_mutex_unlock(&sendLock);
             assert(sent == totalLen);
         }
     } else if (finishedReqs == warmupReqs + maxReqs) {
         resp->type = FINISH;
         for (int fd : clientFds) {
             totalLen = sizeof(Response) - MAX_RESP_BYTES;
+            pthread_mutex_lock(&sendLock);
             sent = sendfull(fd, reinterpret_cast<const char*>(resp), totalLen, 0);
+            pthread_mutex_unlock(&sendLock);
             assert(sent == totalLen);
         }
     }
 
     delete resp;
 
-    pthread_mutex_unlock(&sendLock);
 }
 
 void NetworkedServer::finish() {
